@@ -52,22 +52,28 @@ def dist_to_tri_single_args(tri, point):
         return dists_[indices], points[:, indices]
 
 
-def project_to_mesh(vertices, faces, query):
+def project_to_mesh(vertices, faces, query, TOP_K_VERTICES=3):
     from scipy.spatial import KDTree
 
-    naive_dists, top_k_vertices = KDTree(data=vertices).query(query, k=3)
+    naive_dists, top_k_vertices = KDTree(
+        data=vertices).query(query, k=TOP_K_VERTICES)
     top_k_vertices = torch.tensor(top_k_vertices)
 
-    # want to find the faces which correspond to the matched top-5 vertices by searching faces for the indices given in top_k_vertices]
-
     min_points = []
-    for matches, q in zip(top_k_vertices, query):
-        k_k, f_k = matches[None, :].eq(
+
+    # get the corresponding faces
+    def min_point(top_k_vertices, q):
+        k_k, f_k = top_k_vertices[None, :].eq(
             faces.flatten()[:, None]).nonzero(as_tuple=True)
         unique_matches = faces[torch.unique(k_k//3, sorted=False)]
         dist_, point_min = project_to_tri(vertices[unique_matches], q[None])
-        min_points.append(point_min)
+        return point_min
+
+    min_points = tuple(min_point(matches, q)
+                       for matches, q in zip(top_k_vertices, query))
+
     min_points = torch.cat(min_points, dim=0)
+    
     return min_points
 
 
