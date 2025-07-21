@@ -2,6 +2,8 @@
 
 A package that projects to a mesh (by projecting to the faces corresponding to the top-k vertices)
 
+Yes I did just implement this without barycentric coordinates..!
+
 ## Dependencies
 - torch
 - scipy.spatial: KDTree
